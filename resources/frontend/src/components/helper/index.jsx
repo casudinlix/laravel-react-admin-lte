@@ -3,34 +3,128 @@ import Loading from "react-fullscreen-loading";
 import Select from "react-select";
 import Axios from "axios";
 import Swal from "sweetalert2";
+import { useEffect, useState } from "react";
 
 const server =
     document.querySelector('meta[name="base_url"]').content + "/api/";
 
+export const removeWindowClass = (classList) => {
+    const window = document && document.getElementById("root");
+    if (window) {
+        // @ts-ignore
+        window.classList.remove(classList);
+    }
+};
+export const addWindowClass = (classList) => {
+    const window = document && document.getElementById("root");
+    if (window) {
+        // @ts-ignore
+        window.classList.add(classList);
+    }
+};
+export const useWindowSize = () => {
+    const [windowSize, setWindowSize] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    });
+    useEffect(() => {
+        function handleResize() {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+        }
+        window.addEventListener("resize", handleResize);
+        handleResize();
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+    return windowSize;
+};
 export function postData(endpoint, data) {
     let config = {
         headers: {
-            "x-auth-token": getItem('userdata'),
+            "x-auth-token": getItem("userdata"),
         },
     };
     return new Promise((resolve, reject) => {
         Axios.post(server + endpoint, data, config)
             .then((res) => {
-                resolve(res.data);
+                resolve(res);
             })
             .catch((err) => {
                 reject(err?.response?.data || "Tidak Terhubung Keserver");
             });
     });
 }
+export const calculateWindowSize = (windowWidth) => {
+    if (windowWidth >= 1200) {
+        return "lg";
+    }
+    if (windowWidth >= 992) {
+        return "md";
+    }
+    if (windowWidth >= 768) {
+        return "sm";
+    }
+    return "xs";
+};
+export const JSONToCSVConvertor = (JSONData, ReportTitle, ShowLabel) => {
+    const arrData =
+        typeof JSONData !== "object" ? JSON.parse(JSONData) : JSONData;
+
+    let CSV = "";
+
+    if (ShowLabel) {
+        let name = "";
+
+        for (const index in arrData[0]) {
+            name += index + ",";
+        }
+
+        name = name.slice(0, -1);
+
+        CSV += name + "\r\n";
+    }
+
+    for (let i = 0; i < arrData.length; i++) {
+        let row = "";
+
+        for (const index in arrData[i]) {
+            row += `"${arrData[i][index]}",`;
+        }
+
+        row = row.slice(0, row.length - 1);
+
+        CSV += row + "\r\n";
+    }
+
+    if (CSV === "") {
+        alert("Invalid data");
+        return;
+    }
+
+    let fileName = "";
+    fileName += ReportTitle.replace(/ /g, "_");
+
+    const uri = "data:text/csv;charset=utf-8," + escape(CSV);
+
+    const link = document.createElement("a");
+    link.href = uri;
+    link.style.visibility = "hidden";
+    link.download = fileName + ".csv";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
 
 export const setItem = (nama, data) => {
-  localStorage.setItem(nama, JSON.stringify(data));
+    localStorage.setItem(nama, JSON.stringify(data));
 };
 export const getItem = (nama) => {
-  return localStorage.getItem(nama) === null
-    ? []
-    : JSON.parse(localStorage.getItem(nama) || "");
+    return localStorage.getItem(nama) === null
+        ? []
+        : JSON.parse(localStorage.getItem(nama) || "");
 };
 export const getMeta = (metaName) => {
     const metas = document.getElementsByTagName("meta");
@@ -61,29 +155,29 @@ export const openTab = (url) => {
 };
 
 const Toast = Swal.mixin({
-  toast: true,
-  position: "top-end",
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true,
-  didOpen: (toast) => {
-    toast.addEventListener("mouseenter", Swal.stopTimer);
-    toast.addEventListener("mouseleave", Swal.resumeTimer);
-  },
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+        toast.addEventListener("mouseenter", Swal.stopTimer);
+        toast.addEventListener("mouseleave", Swal.resumeTimer);
+    },
 });
 export function ToastNotification(status, text) {
-  return new Promise((resolve, reject) => {
-    Toast.fire({
-      icon: status,
-      title: text,
-    })
-      .then(resolve("berhasil"))
-      .catch(reject("error"));
-  });
+    return new Promise((resolve, reject) => {
+        Toast.fire({
+            icon: status,
+            title: text,
+        })
+            .then(resolve("berhasil"))
+            .catch(reject("error"));
+    });
 }
 export const removeItem = (nama) => {
     localStorage.removeItem(nama);
-  };
+};
 export const ReanderField = ({
     input,
     label,
@@ -164,7 +258,7 @@ export const ReanderSelect = ({
     textColor = "text-black",
 }) => (
     <div className="form-group">
-        <label htmlFor="" className={textColor}>
+        <label htmlFor={id} className={textColor}>
             {label}
         </label>
         <Select
